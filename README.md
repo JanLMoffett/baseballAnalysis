@@ -2,12 +2,12 @@
 R scripts to answer questions about baseball.
 
 Packages required:
-baseballr
-dplyr
-ggplot2
-devtools
-stringr
-lubridate
+- [baseballr](https://billpetti.github.io/baseballr/)
+- dplyr
+- ggplot2
+- devtools
+- stringr
+- lubridate
 
 ### [buildDatesMLB.R](buildDatesMLB.R)
 
