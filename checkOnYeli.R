@@ -13,7 +13,8 @@ source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/e
 source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/datavizExtras.R")
 
 #looking up Christian's MLB ID (592885)
-cyID <- playerid_lookup(last_name = "Yelich", first_name = "Christian")$mlbam_id
+#cyID <- playerid_lookup(last_name = "Yelich", first_name = "Christian")$mlbam_id
+cyID <- 592885
 
 #getting the data from baseball savant data with baseballr
 #the 2022 regular season started on Apr 7
@@ -26,6 +27,8 @@ hitEvents <- c("single","double","triple","home_run")
 outEvents <- c("field_out", "fielders_choice_out", "force_out",
                "grounded_into_double_play", "double_play")
 
+unique(cy$events)
+
 #making some variables for the summary
 cy <- cy %>% 
   mutate(
@@ -35,9 +38,11 @@ cy <- cy %>%
     strike = ifelse(type == "S", 1, 0),
     callStrike = ifelse(description == "called_strike", 1, 0),
     swingStrike = ifelse(description == "swinging_strike", 1, 0),
-    BIP = ifelse(type == "X", 1, 0),
     
     BB = ifelse(events == "walk", 1, 0),
+    SO = ifelse(events == "strikeout", 1, 0),
+    
+    BIP = ifelse(type == "X", 1, 0),
     hit = ifelse(events %in% hitEvents, 1, 0),
     single = ifelse(events == "single",1,0),
     double = ifelse(events == "double",1,0),
@@ -46,16 +51,73 @@ cy <- cy %>%
     
     )
 
+#overall stats to date, 2022 season
+#----
+
+#all pitches
+t(
+cy %>%
+  summarize(
+    pitches = n(),
+    PA = n_distinct(paID),
+    
+    balls = sum(ball, na.rm = T),
+    strikes = sum(strike, na.rm = T),
+    callStrikes = sum(callStrike, na.rm = T),
+    swingStrikes = sum(swingStrike, na.rm = T),
+    
+    BB = sum(BB, na.rm = T),
+    SO = sum(SO, na.rm = T),
+    
+    BIP = sum(BIP, na.rm = T),
+    hits = sum(hit, na.rm = T),
+    singles = sum(single, na.rm = T),
+    doubles = sum(double, na.rm = T),
+    triples = sum(triple, na.rm = T),
+    HR = sum(HR, na.rm = T)
+    ) %>%
+  mutate(
+    BABIP = hits/BIP,
+    bbRt = BB/PA,
+    soRt = SO/PA
+    
+  ))
+
+#BIP
+cy %>% filter(type == "X") %>%
+  summarize(avgLaunchAngle = mean(launch_angle, na.rm = T),
+            avgLaunchSpeed = mean(launch_speed, na.rm = T))
+
+#hits
+cy %>% filter(events %in% hitEvents) %>%
+  group_by(events) %>%
+  summarize(avgLaunchAngle = mean(launch_angle, na.rm = T),
+            avgLaunchSpeed = mean(launch_speed, na.rm = T))
+
+
+#averages from samplingMLB file
+w <- data.frame(
+  type = c("BIP", "hit", "single", "double", "triple", "HR"),
+  total = c(48527, 15797, 10136, 3177, 298, 2186),
+  avgLaunchAngle = c(11.833299, 11.620858,  6.128548, 16.581866, 19.448190, 28.350927),
+  avgLaunchSpeed = c(87.90092, 93.47043, 89.87291, 97.43947, 96.87187, 103.62863))  
+  
+
 #calculating stats by game
 byGame <- cy %>% 
   group_by(game_date) %>% 
   summarize(
     pitches = n(),
     PA = n_distinct(paID),
+    
     balls = sum(ball, na.rm = T),
     strikes = sum(strike, na.rm = T),
     callStrikes = sum(callStrike, na.rm = T),
     swingStrikes = sum(swingStrike, na.rm = T),
+    
+    BB = sum(BB, na.rm = T),
+    SO = sum(SO, na.rm = T),
+    
     BIP = sum(BIP, na.rm = T),
     hits = sum(hit, na.rm = T),
     singles = sum(single, na.rm = T),
@@ -65,8 +127,12 @@ byGame <- cy %>%
              ) %>%
   mutate(
     game_seq = seq_along(unique(cy$game_date)),
+    
     cumPitches = cumsum(pitches),
     cumPA = cumsum(PA),
+    
+    cumBB = cumsum(BB),
+    cumSO = cumsum(SO),
     
     cumBIP = cumsum(BIP),
     cumHit = cumsum(hits)
@@ -105,24 +171,6 @@ byGameBIP <- cy %>%
 #adding BIP to other game stats                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   
 byGame <- byGame %>% left_join(byGameBIP, by = "game_date")
   
-#overall stats
-cy %>%
-  summarize(
-    BIP = sum(BIP, na.rm = T),
-    hits = sum(hit, na.rm = T),
-    BB = sum(BB, na.rm = T),
-    swingStrikes = sum(swingStrike, na.rm = T),
-    callStrikes = sum(callStrike, na.rm = T)
-            
-            ) %>%
-  mutate(
-    BABIP = hits/BIP
-  )
-  
-#overall stats on BIP
-cy %>% filter(type == "X") %>%
-  summarize(avgLaunchAngle = mean(launch_angle, na.rm = T),
-            avgLaunchSpeed = mean(launch_speed, na.rm = T))
 
 #plots
 

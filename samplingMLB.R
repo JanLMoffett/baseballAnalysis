@@ -164,6 +164,10 @@ freqDF %>% summarize(total = sum(total),
          propOut = totalOut/total,
          propHit = totalHit/total)
 
+#   total totalBIP totalOut totalHit propBIP propOut propHit
+#   <dbl>    <dbl>    <dbl>    <dbl>   <dbl>   <dbl>   <dbl>
+#1 277444    48527    31270    15797   0.175   0.113  0.0569
+
 doSummary <- function(thisDF){
   thisDF %>% summarize(
     total = sum(total, na.rm = T),
@@ -172,15 +176,43 @@ doSummary <- function(thisDF){
     )
   }
 
-doSummary(bipDF)
-doSummary(hitDF)
-doSummary(singDF)
-doSummary(doubDF)
-doSummary(tripDF)
-doSummary(hrDF)
+w1 <- doSummary(bipDF)
+w1 <- w1 %>% mutate(type = "BIP")
+#  total avgLaunchSpeed avgLaunchAngle
+#  <dbl>          <dbl>          <dbl>
+#1 48527           87.9           11.8
 
+w2 <- doSummary(hitDF)
+w2 <- w2 %>% mutate(type = "hit")
+#  total avgLaunchSpeed avgLaunchAngle
+#  <dbl>          <dbl>          <dbl>
+#1 15797           93.5           11.6
 
+w3 <- doSummary(singDF)
+w3 <- w3 %>% mutate(type = "single")
+#  total avgLaunchSpeed avgLaunchAngle
+#  <dbl>          <dbl>          <dbl>
+#1 10136           89.9           6.13
 
+w4 <- doSummary(doubDF)
+w4 <- w4 %>% mutate(type = "double")
+#  total avgLaunchSpeed avgLaunchAngle
+#  <dbl>          <dbl>          <dbl>
+#1  3177           97.4           16.6
+
+w5 <- doSummary(tripDF)
+w5 <- w5 %>% mutate(type = "triple")
+#  total avgLaunchSpeed avgLaunchAngle
+#  <dbl>          <dbl>          <dbl>
+#1   298           96.9           19.4
+
+w6 <- doSummary(hrDF)
+w6 <- w6 %>% mutate(type = "HR")
+#  total avgLaunchSpeed avgLaunchAngle
+#  <dbl>          <dbl>          <dbl>
+#1  2186           104.           28.4
+
+w <- w1 %>% union(w2) %>% union(w3) %>% union(w4) %>% union(w5) %>% union(w6)
 
 
 

@@ -7,7 +7,7 @@ library(stringr)
 library(ggplot2)
 library(boot)
 
-source("buildDatesMLB.R")
+source_url("https://raw.githubusercontent.com/JanLMoffett/baseballAnalysis/master/buildDatesMLB.R")
 
 #pick some random days, stratified by season
 
