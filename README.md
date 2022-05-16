@@ -24,3 +24,7 @@ Draw data from randomly chosen game dates to estimate probability distributions 
 ### [checkOnYeli.R](checkOnYeli.R)
 
 Is Christian Yelich hitting or what?
+
+### [plotLaunch.R](plotLaunch.R)
+
+Plot the launch angle and speed of batted balls.
