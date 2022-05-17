@@ -6,8 +6,12 @@ library(lubridate)
 library(stringr)
 library(ggplot2)
 library(boot)
+library(devtools)
 
 source_url("https://raw.githubusercontent.com/JanLMoffett/baseballAnalysis/master/buildDatesMLB.R")
+source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/colorConstants.R")
+source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/extraThemes.R")
+source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/datavizExtras.R")
 
 #pick some random days, stratified by season
 
@@ -32,7 +36,7 @@ d.yesterday <- statcast_search(start_date = "2022-05-09", end_date = "2022-05-09
 d.s1 <- d.yesterday[1,]
 
 for(i in seq_along(sDates)){
-  print(i)
+  print(paste0("Scraping sample ", i, " of ", length(sDates)))
   #pull statcast data for that date
   d1 <- statcast_search(start_date = sDates[i], end_date = sDates[i], player_type = "batter")
   d1 <- d1 %>% filter(type == "X")
@@ -48,20 +52,87 @@ d.s1 <- d.s1[-1,]
 summary(d.s1$launch_angle)
 summary(d.s1$launch_speed)
 
+subt1 <- "Stratified Cluster Sample of BIP\nfrom randomly selected game dates, 2015-2021"
+cap1 <- "Data Source: Baseball Savant"
+
 ggplot(d.s1) + napkin + 
   geom_histogram(aes(launch_speed), fill = oj["blue3"]) + 
   geom_vline(xintercept = mean(d.s1$launch_speed, na.rm = T), color = oj["orangeK"]) + 
   geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) +
-  geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"])
+  geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
+  labs(title = "Sample Distribution of Launch Speed",
+       subtitle = subt1,
+       caption = cap1)
 
 ggplot(d.s1) + napkin + 
-  geom_density(aes(launch_speed))
+  geom_density(aes(launch_speed), fill = oj["blue3"]) + 
+  geom_vline(xintercept = mean(d.s1$launch_speed, na.rm = T), color = oj["orangeK"]) + 
+  geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) +
+  geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
+  labs(title = "Sample Distribution of Launch Speed",
+       subtitle = subt1,
+       caption = cap1)
 
 ggplot(d.s1) + napkin + 
-  geom_histogram(aes(launch_angle))
+  geom_histogram(aes(launch_angle), fill = oj["blue4"]) + 
+  geom_vline(xintercept = mean(d.s1$launch_angle, na.rm = T), color = oj["orangeK"]) + 
+  geom_vline(xintercept = quantile(d.s1$launch_angle, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) +
+  geom_vline(xintercept = quantile(d.s1$launch_angle, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
+  labs(title = "Sample Distribution of Launch Angle",
+       subtitle = subt1,
+       caption = cap1)
 
 ggplot(d.s1) + napkin + 
-  geom_density(aes(launch_angle))
+  geom_density(aes(launch_angle), fill = oj["blue4"]) +
+  geom_vline(xintercept = mean(d.s1$launch_angle, na.rm = T), color = oj["orangeK"]) + 
+  geom_vline(xintercept = quantile(d.s1$launch_angle, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) +
+  geom_vline(xintercept = quantile(d.s1$launch_angle, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
+  labs(title = "Sample Distribution of Launch Angle",
+       subtitle = subt1,
+       caption = cap1)
 
-#i'd like to boostrap samples from the sample of BIP
+#i'd like to bootstrap samples from the sample of BIP
 
+#bootstrapping est. of mean launch speed on all BIP, statcast era
+#----
+#function for boot param
+sampleMean.LS <- function(t, i) {
+  return(mean(t$launch_speed[i], na.rm = T))
+}
+
+#run boot
+boot1 <- boot(d.s1, sampleMean.LS, 1000)
+
+#histogram of bootstrap means on launch speed
+td1 <- data.frame(x = seq(1,1000,1), sampleMeans = boot1$t)
+ggplot(td1) + napkin + 
+  geom_histogram(aes(x = sampleMeans), fill = ibm["purple"]) + 
+  geom_vline(xintercept = boot1$t0, color = ibm["orange"]) + 
+  labs(title = "Distribution of Bootstrap Sample Means",
+       subtitle = "Launch Speed on BIP, 2015-2021",
+       cap = cap1,
+       x = "Sample Means of Launch Speed (MPH)",
+       y = "Count") + 
+  annotate("text", x = 87.9, y = 105, label = paste0("est. mean = ", round(boot1$t0, digits = 2)))
+#----
+
+#bootstrapping est. of mean launch angle
+#----
+#function for boot param
+sampleMean.LA <- function(t, i) {
+  return(mean(t$launch_angle[i], na.rm = T))
+}
+
+#run boot
+boot2 <- boot(d.s1, sampleMean.LA, 1000)
+
+#histogram of bootstrap means on launch speed
+td2 <- data.frame(x = seq(1,1000,1), sampleMeans = boot2$t)
+ggplot(td2) + napkin + 
+  geom_histogram(aes(x = sampleMeans), fill = ibm["purple"]) + 
+  geom_vline(xintercept = boot2$t0, color = ibm["orange"]) + 
+  labs(title = "Distribution of Bootstrap Sample Means",
+       subtitle = "Launch Angle on BIP, 2015-2021",
+       cap = cap1) + 
+  annotate("text", x = 12.1, y = 85, label = paste0("est. mean = ", round(boot2$t0, digits = 2)))
+#----
