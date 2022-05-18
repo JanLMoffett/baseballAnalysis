@@ -28,3 +28,11 @@ Is Christian Yelich hitting or what?
 ### [plotLaunch.R](plotLaunch.R)
 
 Plot the launch angle and speed of batted balls.
+
+### [greinkeFielding.R](greinkeFielding.R)
+
+Where do we find a pitcher's fielding ability in the data, and is Zack Greinke as good as I think he is?
+
+### [scrapingFangraphs.R](scrapingFangraphs.R)
+
+Use baseballr to hit up the Fangraphs leader boards.
