@@ -1,0 +1,36 @@
+---
+title: "Zack Greinke and Pitcher Fielding"
+output:
+  html_document:
+    df_print: paged
+---
+
+ 
+```{r Setup, include = F, message = F, warning = F}
+
+library(baseballr)
+library(dplyr)
+library(stringr)
+
+#looking up Zack's mlb id (425844)
+#zgID <- playerid_lookup(last_name = "Greinke", first_name = "Zack")$mlbam_id
+zgID <- 425844
+
+#getting the data from baseball savant with baseballr
+#for Greinke's start on opening day, 04/07/22
+zg <- statcast_search(start_date = "2022-04-07", 
+                end_date = "2022-04-07",
+                player_type = "pitcher",
+                playerid = zgID)
+
+```
+
+Here are the plays that Zack was involved in during his April 7 start:
+
+```{r, echo = F}
+zg %>% filter(type == "X" & str_detect(zg$des, "Greinke")) %>% 
+  select(pitch_number, pitch_name, release_speed, launch_speed, launch_angle, des)
+
+```
+
+

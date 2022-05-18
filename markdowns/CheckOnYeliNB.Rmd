@@ -1,0 +1,510 @@
+---
+title: "Check On Yeli: May 17, 2022"
+output: html_notebook
+---
+
+```{r Setup, include = F}
+
+library(baseballr)
+library(ggplot2)
+library(dplyr)
+library(stringr)
+library(lubridate)
+library(devtools)
+
+#build a vector of MLB regular season game dates
+source_url("https://raw.githubusercontent.com/JanLMoffett/baseballAnalysis/master/buildDatesMLB.R")
+
+#a randomly sampled set of BIP to derive "average" comparison
+av <- read.csv(url("https://raw.githubusercontent.com/JanLMoffett/baseballAnalysis/master/data/BIP_35dates_2015_21.csv"))
+
+#importing colors and themes for plots
+#github.com/JanLMoffett/datavizExtras
+source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/colorConstants.R")
+source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/extraThemes.R")
+source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/datavizExtras.R")
+```
+
+
+```{r data1, include = F}
+#looking up Christian's MLB ID (592885)
+#cyID <- playerid_lookup(last_name = "Yelich", first_name = "Christian")$mlbam_id
+cyID <- 592885
+
+#getting the data from baseball savant data with baseballr
+#the 2022 regular season started on Apr 7
+opening_day2022 <- "2022-04-07"
+cy <- statcast_search(start_date = opening_day2022, 
+                end_date = today(),
+                player_type = "batter",
+                playerid = cyID)
+
+#2021
+cy21 <- statcast_search(start_date = SCseasons$start[SCseasons$season == 2021],
+                        end_date = "2021-06-17",
+                        player_type = "batter",
+                        playerid = cyID)
+
+g35.21 <- cy21 %>% group_by(game_date) %>% 
+  summarize(games = 1) %>%
+  mutate(cum_games = cumsum(games)) %>%
+  filter(cum_games == 35) %>%
+  pull(game_date)
+
+cy21 <- statcast_search(start_date = SCseasons$start[SCseasons$season == 2021],
+                        end_date = g35.21,
+                        player_type = "batter",
+                        playerid = cyID)
+
+#2019
+cy19 <- statcast_search(start_date = SCseasons$start[SCseasons$season == 2019],
+                        end_date = "2019-05-17",
+                        player_type = "batter",
+                        playerid = cyID)
+
+g35.19 <- cy19 %>% group_by(game_date) %>% 
+  summarize(games = 1) %>%
+  mutate(cum_games = cumsum(games)) %>%
+  filter(cum_games == 35) %>%
+  pull(game_date)
+
+cy19 <- statcast_search(start_date = SCseasons$start[SCseasons$season == 2019],
+                        end_date = g35.19,
+                        player_type = "batter",
+                        playerid = cyID)
+
+
+#2018
+cy18 <- statcast_search(start_date = SCseasons$start[SCseasons$season == 2018],
+                        end_date = "2018-06-17",
+                        player_type = "batter",
+                        playerid = cyID)
+
+g35.18 <- cy18 %>% group_by(game_date) %>% 
+  summarize(games = 1) %>%
+  mutate(cum_games = cumsum(games)) %>%
+  filter(cum_games == 35) %>%
+  pull(game_date)
+
+cy18 <- statcast_search(start_date = SCseasons$start[SCseasons$season == 2018],
+                        end_date = g35.18,
+                        player_type = "batter",
+                        playerid = cyID)
+
+
+#combine sets and create season variable
+cy <- cy %>% union(cy21) %>% union(cy19) %>% union(cy18) %>%
+  mutate(season = as.numeric(str_sub(game_date, start = 1, end = 4)))
+
+
+hitEvents <- c("single","double","triple","home_run")
+outEvents <- c("field_out", "fielders_choice_out", "force_out",
+               "grounded_into_double_play", "double_play")
+
+#making some variables for the summary
+cy <- cy %>% 
+  mutate(
+    paID = paste0(game_date,"_", at_bat_number),
+    
+    ball = ifelse(type == "B", 1, 0),
+    strike = ifelse(type == "S", 1, 0),
+    callStrike = ifelse(description == "called_strike", 1, 0),
+    swingStrike = ifelse(description == "swinging_strike", 1, 0),
+    
+    BB = ifelse(events == "walk", 1, 0),
+    SO = ifelse(events == "strikeout", 1, 0),
+    
+    BIP = ifelse(type == "X", 1, 0),
+    hit = ifelse(events %in% hitEvents, 1, 0),
+    single = ifelse(events == "single",1,0),
+    double = ifelse(events == "double",1,0),
+    triple = ifelse(events == "triple",1,0),
+    HR = ifelse(events == "home_run",1,0))
+```
+
+
+```{r bySeason, echo = F}
+#display stats by season
+cy %>% group_by(season) %>%
+  summarize(
+    games = n_distinct(game_date),
+    pitches = n(),
+    PA = n_distinct(paID),
+    
+    balls = sum(ball, na.rm = T),
+    strikes = sum(strike, na.rm = T),
+    callStrikes = sum(callStrike, na.rm = T),
+    swingStrikes = sum(swingStrike, na.rm = T),
+    
+    BB = sum(BB, na.rm = T),
+    SO = sum(SO, na.rm = T),
+    
+    BIP = sum(BIP, na.rm = T),
+    hits = sum(hit, na.rm = T),
+    singles = sum(single, na.rm = T),
+    doubles = sum(double, na.rm = T),
+    triples = sum(triple, na.rm = T),
+    HR = sum(HR, na.rm = T)
+    ) %>%
+  mutate(
+    BABIP = hits/BIP,
+    bbRt = BB/PA,
+    soRt = SO/PA
+    
+  ) %>% arrange(desc(season))
+    
+```
+
+If you follow recent Major League Baseball events, you'll be familiar with the period of time in which Yelich, nothing more than a skinny slap hitter to the unenlightened of the time, ascended to the heights of hitting god-dom, popping a squat aside Mike Trout at the top of the mountain, for a time.   
+
+Thirty-five games in to the 2018 season he was yet to enter this phase, thirty-five games into the 2019 season, which I will call "Beast Year," he was deep inside it.  You can see this in the significantly smaller number of pitches he had seen to that point in 2019, an indication he was putting balls in play early into plate appearances, when normally he's more reticent with his swings.  His confidence in his ability to swing at the right pitches was at its peak at this time, as was his physical condition.
+
+During the 2017-2018 offseason, Christian got bigger and stronger than he had ever been in his life, in anticipation of a new start in Milwaukee, or perhaps to make Derek Jeter jealous.  Early in 2018 he was still mortal, struggling some with the lower back pain that intermittently takes him out of the lineup, and is also purportedly responsible for his poor performance in 2021.  This point in time--35 games into 2018--is most interesting to me at the moment, because if I'm right, his career has a cycle and he is returning to a similar point in it now, in 2022, and heading towards another MVP-caliber year (or at the very least a drastic improvement from 2020 and 2021).
+
+**Side note:** My opinion is that Christian's recurring back injury is exacerbated by the head-first slides he does often as a frequent base-stealer.  Elite hitters who have big years of stolen bases rarely repeat them in subsequent years, I suspect because of the physical toll it takes.  Christian stole 22 bases in 2018, 30 in 2019 (becoming the 10th member of the 40-30 club, as my bobble-head will tell you), and single digits since.  It will be interesting to watch how many steals he attempts this year.  
+
+Launch characteristics of Christian's balls in play, after the first 35 games of each season:
+
+```{r BIPstats, eval = T, echo = F, results = "show"}
+
+#BIP
+cy %>% filter(type == "X") %>%
+  group_by(season) %>%
+  summarize(
+    BIP = n(),
+    avgLaunchAngle = mean(launch_angle, na.rm = T),
+    avgLaunchSpeed = mean(launch_speed, na.rm = T)) %>% 
+  arrange(desc(season))
+
+```
+
+Christian Yelich hits the ball extremely hard.  Launch speed has separated him from the pack throughout his career and continues to do so.  His contact with baseballs remained consistently punishing, even during his least productive periods.  In a separate analysis I concluded that the main culprit for his drop in production was refusing to swing, and I have a theory as to why, which I'll discuss later.  
+
+Of course average launch angle was also at its highest during Beast Year, 2019, rising at last to the coveted fliner profile in the teens of degrees.  This lift was the final ingredient his power needed to explode.  Hard-hit balls will inevitably travel further when the ground isn't in their path.  When Christian hits balls in the air, as hard as he hits them, they elude gloves and leave parks.      
+
+Even with this fact, I understand Christian when he says he doesn't want to hear about launch angle.  In a linear equation, raising his launch angle raises his wOBA, his home run totals, and his spirits without complication.  In reality, in the muscle and bone and reflexes of a hitter's physiognomy, raising launch angle--if you can even do it on purpose--means changing a swing, which means yanking blindly on a string with a million unseen attachments.  
+
+Becoming a Major League Baseball player is virtually impossible.  Even for good baseball players at the highest levels of amateur, minor league, independent or international play, the odds of making it to and remaining part of The Show are dauntingly long.  The way a Major League hitter moves his body when he swings is the result of a natural selection process, the precise choreography that was necessary to get him to that point.  He does things the way he does them because all the other ways he tried along his lifelong honing to MLB form didn't produce, or weren't sustainable.  Go back in time and alter any Major League hitter's swing as it coalesces, and I bet they're not a Major Leaguer in the new, darker timeline you create.  Their swing is their swing because it's the swing that got and keeps them there.  Any variation is a gamble, and possibly a disaster, no matter how many quantitative analysts advocate for it.
+
+In the case of Christian Yelich, The lowering of launch angle is more of a return to roots than a need for concern.  I see the hard ground balls he's been hitting and think "Classic Yeli!"  He seems to have come back to center to regroup, relaxing back into the mechanics that come most naturally to him, and it's serving him well.     
+
+
+Launch characteristics of Christian's hits:
+
+```{r hitStats, eval = T, echo = F, results = "show"}
+
+#averages from samplingMLB file
+w <- data.frame(
+  type = c("BIP", "hit", "single", "double", "triple", "HR"),
+  total = c(48527, 15797, 10136, 3177, 298, 2186),
+  avgLaunchAngle = c(11.833299, 11.620858,  6.128548, 16.581866, 19.448190, 28.350927),
+  avgLaunchSpeed = c(87.90092, 93.47043, 89.87291, 97.43947, 96.87187, 103.62863))  
+
+#hits
+cy %>% filter(events %in% hitEvents) %>%
+  group_by(events) %>%
+  summarize(
+    count = n(),
+    avgLaunchAngle = mean(launch_angle, na.rm = T),
+    avgLaunchSpeed = mean(launch_speed, na.rm = T))
+
+```
+
+Compare to Statcast-era averages for hits:
+
+```{r hitAvgs, eval = T, echo = F, results = "show"}
+
+#averages from samplingMLB file
+w
+  
+```
+
+Game by game stats:
+
+```{r byGame, echo = F}
+#calculating stats by game
+byGame <- cy %>% 
+  group_by(game_date) %>% 
+  summarize(
+    pitches = n(),
+    PA = n_distinct(paID),
+    
+    balls = sum(ball, na.rm = T),
+    strikes = sum(strike, na.rm = T),
+    callStrikes = sum(callStrike, na.rm = T),
+    swingStrikes = sum(swingStrike, na.rm = T),
+    
+    BB = sum(BB, na.rm = T),
+    SO = sum(SO, na.rm = T),
+    
+    BIP = sum(BIP, na.rm = T),
+    hits = sum(hit, na.rm = T),
+    singles = sum(single, na.rm = T),
+    doubles = sum(double, na.rm = T),
+    triples = sum(triple, na.rm = T),
+    HR = sum(HR, na.rm = T)
+             ) %>%
+  mutate(
+    game_seq = seq_along(unique(cy$game_date)),
+    
+    cumPitches = cumsum(pitches),
+    cumPA = cumsum(PA),
+    
+    cumBB = cumsum(BB),
+    cumSO = cumsum(SO),
+    
+    cumBIP = cumsum(BIP),
+    cumHit = cumsum(hits)
+    
+  )
+
+#game by game stats on his balls in play
+byGameBIP <- cy %>% 
+  filter(type == "X") %>%
+  mutate(
+    BIPover93 = ifelse(launch_speed > 93, 1, 0),
+    BIPover96 = ifelse(launch_speed > 96, 1, 0),
+    BIPover99 = ifelse(launch_speed > 99, 1, 0),
+
+    GBover96 = ifelse(launch_speed > 96 & launch_angle < 0, 1, 0),
+    GBover99 = ifelse(launch_speed > 99 & launch_angle < 0, 1, 0)
+        ) %>%
+  group_by(game_date) %>%
+  summarize(
+    avgLA = mean(launch_angle, na.rm = T),
+    minLA = min(launch_angle, na.rm = T),
+    maxLA = max(launch_angle, na.rm = T),
+    
+    avgLS = mean(launch_speed, na.rm = T),
+    minLS = min(launch_speed, na.rm = T),
+    maxLS = max(launch_speed, na.rm = T),
+    
+    BIPover93 = sum(BIPover93, na.rm = T),
+    BIPover96 = sum(BIPover96, na.rm = T),
+    BIPover99 = sum(BIPover99, na.rm = T),
+    
+    GBover96 = sum(GBover96, na.rm = T),
+    GBover99 = sum(GBover99, na.rm = T)
+            )
+         
+#adding BIP to other game stats                               
+byGame <- byGame %>% left_join(byGameBIP, by = "game_date")
+  
+byGame
+```
+
+## Plots
+
+```{r byGamePlotSetup, include = F}
+
+#pitch by pitch BIP data
+p1 <- ggplot(cy %>% filter(type == "X")) + digiturf
+cap1 <- "Source: Baseball Savant"
+subt1 <- "Christian Yelich's Balls in Play, 2022 Season"
+  
+#color scale vectors
+v <- c(jmbn["periwinkle"], jmbn["highlighter"])
+names(v) <- c("0","1")
+v2 <- c(jmbn["navy"], transpa(jmbn["highlighter"], 100))
+names(v2) <- c("0","1")
+
+```
+
+```{r ScatterSpeedByAngle, echo = F}
+
+#launch speed by launch angle
+p1 + geom_point(aes(x = launch_angle, y = launch_speed, color = factor(hit))) +
+  scale_color_manual(values = v) + 
+  labs(title = "Launch Speed by Launch Angle",
+       subtitle = subt1, caption = cap1)
+
+```
+
+```{r BoxAngle, echo = F}
+
+#boxplot of launch angle
+p1 + geom_boxplot(aes(x = launch_angle, y = factor(hit), color = factor(hit), fill = factor(hit)), 
+                  outlier.size = 3, size = 1) + 
+  scale_color_manual(values = v) + 
+  scale_fill_manual(values = v2) +
+  labs(title = "Launch Angle", subtitle = subt1, caption = cap1)
+
+```
+
+```{r boxSpeed, echo = F}
+#boxplot of launch speed
+p1 + geom_boxplot(aes(x = launch_speed, y = factor(hit), color = factor(hit), fill = factor(hit)), 
+                  outlier.size = 3, size = 1) + 
+  scale_color_manual(values = v) + 
+  scale_fill_manual(values = v2) +
+  labs(title = "Launch Speed",
+       subtitle = subt1, caption = cap1)
+
+```
+
+```{r histAngle, echo = F}
+
+#histogram of launch angle
+p1 + geom_histogram(aes(x = launch_angle), binwidth = 10, 
+                    fill = jmbn["mauve"], color = jmbn["rose"]) + 
+  labs(title = "Launch Angle",
+       subtitle = subt1, caption = cap1)
+
+#histogram of launch speed
+p1 + geom_histogram(aes(x = launch_speed), binwidth = 10,
+                    fill = jmbn["mauve"], color = jmbn["rose"]) + 
+  labs(title = "Launch Speed",
+       subtitle = subt1, caption = cap1)
+
+```
+
+```{r eval=F}
+#game sequence time series plots
+p2 <- ggplot(byGame) + digiturf
+
+p2 + geom_line(aes(x = game_seq, y = cumPA), color = jmbn["thistle"]) + 
+  geom_line(aes(x = game_seq, y = cumBIP), color = jmbn["periwinkle"])
+
+nGames = dim(byGame)[1]
+#rates
+cy %>%
+  summarize(
+    PA = n_distinct(paID),
+    BIP = sum(BIP, na.rm = T),
+    hits = sum(hit, na.rm = T)
+  ) %>%
+  mutate(
+    PAperGame = PA/nGames,
+    BIPperGame = BIP/nGames,
+    HperGame = hits/nGames,
+    PofBIP = BIP/PA,
+    PofH = hits/PA
+  )
+
+
+#what is he hitting and what is he missing?
+
+#total he's seen of each pitch type
+byPT <- cy %>% group_by(pitch_name) %>% summarize(totalSeen = n())
+
+#BIP
+byPTbip <- cy %>% filter(type == "X") %>%
+  group_by(pitch_name) %>%
+  summarize(totalBIP = n(),
+            avgLaunchSpeed = mean(launch_speed, na.rm = T),
+            minLaunchSpeed = min(launch_speed, na.rm = T),
+            maxLaunchSpeed = max(launch_speed, na.rm = T),
+            avgLaunchAngle = mean(launch_angle, na.rm = T),
+            minLaunchAngle = min(launch_angle, na.rm = T),
+            maxLaunchAngle = max(launch_angle, na.rm = T))
+
+byPT %>% left_join(byPTbip, by = "pitch_name")
+
+#hits
+cy %>% filter(events %in% hitEvents) %>% 
+  group_by(pitch_name) %>% tally()
+
+
+#whiffs
+cy %>% filter(description == "swinging_strike") %>%
+  group_by(pitch_name) %>% tally()
+
+
+#looking
+cy %>% filter(description == "called_strike")
+
+
+#by pitch location zone
+
+cy <- cy %>% mutate(szRegion = case_when(
+  
+  zone %in% c(1:3) ~ "top",
+  zone %in% c(4:6) ~ "mid",
+  zone %in% c(7:9) ~ "bot",
+  zone %in% c(11:14) ~"out",
+  TRUE ~ "unk"
+  
+))
+
+cy %>% select(szRegion)
+
+byReg <- cy %>% group_by(szRegion) %>% summarize(totalSeen = n())
+
+cy %>% filter(type == "X") %>% group_by(szRegion) %>%
+  summarize(totalBIP = n(),
+            avgLA = mean(launch_angle, na.rm = T),
+            avgLS = mean(launch_speed, na.rm = T))
+
+
+#i'm curious about how many bad calls Christian has suffered through
+
+#strike zone boundaries
+szt <- mean(cy$sz_top, na.rm = T)
+szb <- mean(cy$sz_bot, na.rm = T)
+
+szr <- 19.94/24
+szl <- -19.94/24
+#this is the width of the strike zone in inches, converted to feet 
+#and divided by two to get dist from center
+
+#coord to draw home plate on plot of pitch locations
+home_plate <- data.frame("x" = c(-17/24, 17/24, 17/24, 0, -17/24), 
+                         "y" = c(0, 0, -0.2, -0.4, -0.2))
+
+#determining which called strikes were bad calls
+#how many inches of leeway should be give the umps? 
+leeway <- 1/12 #1 inches
+cy <- cy %>% 
+  mutate(
+    szOutside = ifelse(plate_x < (szl - leeway), 1, 0),
+    szInside = ifelse(plate_x > (szr + leeway), 1, 0),
+    
+    szLow = ifelse(plate_z < (szb - leeway), 1, 0),
+    szHigh = ifelse(plate_z > (szt + leeway), 1, 0)
+    
+    ) %>%
+  mutate(
+    szOZone = ifelse(szOutside + szInside + szHigh + szLow > 0, 1, 0)
+  ) %>%
+  mutate(
+    szBadCall = ifelse(szOZone + callStrike > 1, 1 , 0)
+  )
+
+#color scale vector
+cv1 <- c(jmbn["rose"], jmbn["highlighter"])
+names(cv1) <- c("0", "1")
+
+#plot of pitch locations, called strikes with bad calls highlighted
+ggplot(data = cy %>% filter(description == "called_strike")) + 
+  
+  coord_cartesian(xlim = c(-4,4), ylim = c(-1,7)) + 
+  digiturf + 
+  
+  geom_vline(xintercept = c(szl, szr), color = jmbn["periwinkle"], size = 0.5, linetype = 2) +
+  geom_hline(yintercept = c(szt, szb), color = jmbn["periwinkle"], size = 0.5, linetype = 2) +
+  annotate("rect", xmin = szl, xmax = szr, ymin = szb, ymax = szt, fill = transpa(jmbn["periwinkle"], 80)) +
+  
+  annotate("text", x = -3.9, y = -0.2, label = "Catcher's Perspective", color = jmbn["blush"], hjust = 0) +
+  
+  annotate("rect", xmin = -5, xmax = 5, ymin = -2, ymax = 0, fill = transpa(jmbn["mauve"], 100)) + 
+  annotate("polygon", x = home_plate$x, y = home_plate$y, fill = transpa(jmbn["blush"], 100), color = jmbn["mauve"]) + 
+  
+  labs(title = "Locations of Called Strikes",
+       subtitle = "Christian Yelich, 2022 Season",
+       x = "Horizontal Location (ft)", 
+       y = "Vertical Location (ft)") +
+  
+  geom_point(aes(x = plate_x, y = plate_z, color = factor(szBadCall)), shape = 16) + 
+  scale_color_manual(values = cv1)
+  
+#looking closer at these bad calls, and what effect they had on the plate appearance
+badCallpaID <- cy %>% filter(szBadCall == 1) %>% pull(paID)
+
+badCallPA <- cy %>% filter(paID %in% badCallpaID)
+#6 out of 8 of these ended in strikeouts, the other 2 were walks
+
+badCallPA %>% arrange(paID, pitch_number) %>% 
+  select(paID, pitch_number, description, szBadCall, szLow, szOutside, events)
+
+
+```
