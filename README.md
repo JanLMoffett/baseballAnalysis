@@ -25,6 +25,10 @@ Draw data from randomly chosen game dates to estimate probability distributions 
 
 Is Christian Yelich hitting or what?
 
+### [yeliSwings.R](yeliSwings.R)
+
+How have Christian Yelich's swinging habits changed over the years?
+
 ### [plotLaunch.R](plotLaunch.R)
 
 Plot the launch angle and speed of batted balls.
