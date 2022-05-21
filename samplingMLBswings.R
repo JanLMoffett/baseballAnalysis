@@ -23,15 +23,20 @@ tail(bigDates)
 
 #pick some random days
 #number of date to sample from each season
-nDates <- 10
+nDates <- 20
+
+#getting seeds
+#mySeeds <- sample(100:999, size = 7)
+mySeeds <- c(947, 645, 755, 711, 547, 574, 826)
+
 #samples of dates
-set.seed(181); sDates15 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2015"], size = nDates)
-set.seed(263); sDates16 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2016"], size = nDates)
-set.seed(345); sDates17 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2017"], size = nDates)
-set.seed(477); sDates18 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2018"], size = nDates)
-set.seed(529); sDates19 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2019"], size = nDates)
-set.seed(671); sDates20 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2020"], size = nDates)
-set.seed(752); sDates21 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2021"], size = nDates)
+set.seed(mySeeds[1]); sDates15 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2015"], size = nDates)
+set.seed(mySeeds[2]); sDates16 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2016"], size = nDates)
+set.seed(mySeeds[3]); sDates17 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2017"], size = nDates)
+set.seed(mySeeds[4]); sDates18 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2018"], size = nDates)
+set.seed(mySeeds[5]); sDates19 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2019"], size = nDates)
+set.seed(mySeeds[6]); sDates20 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2020"], size = nDates)
+set.seed(mySeeds[7]); sDates21 <- sample(bigDates[str_sub(bigDates, 1, 4) == "2021"], size = nDates)
 
 sDates <- c(sDates15, sDates16, sDates17, sDates18, sDates19, sDates20, sDates21)
 
@@ -40,7 +45,8 @@ swingEvents <- c("hit_into_play", "swinging_strike", "foul",
                  "foul_tip", "swinging_strike_blocked")
 missEvents <- c("swinging_strike", "swinging_strike_blocked")
 foulEvents <- c("foul", "foul_tip")
-watchEvents <- c("called_strike", "ball", "blocked_ball")
+hitEvents <- c("single", "double", "triple", "home_run")
+xbhEvents <- c("double", "triple", "home_run")
 
 #empty data frames to hold results
 freqDF <- data.frame("date" = ymd("2022-01-01"),
@@ -49,12 +55,15 @@ freqDF <- data.frame("date" = ymd("2022-01-01"),
                      "misses" = 9,
                      "fouls" = 9,
                      "BIP" = 9,
-                     "hits" = 9
+                     "H" = 9,
+                     "XBH" = 9
                      )
 
 
 #loop through selected dates, import data and record stats
 for(i in seq_along(sDates)){
+  
+  print(paste0("Scraping ", i, " of ",length(sDates)))
   #pulling data with baseballr statcast_search function
   d1 <- statcast_search(start_date = ymd(sDates[i]), 
                         end_date = ymd(sDates[i]),
@@ -68,10 +77,11 @@ for(i in seq_along(sDates)){
   d2 <- d1 %>% 
     mutate(
       isSwing = ifelse(description %in% swingEvents, 1, 0),
-      isMiss = ifelse(description %in% swingEvents, 1, 0),
+      isMiss = ifelse(description %in% missEvents, 1, 0),
       isFoul = ifelse(description %in% foulEvents, 1, 0),
-      isBIP = ifelse(descripiton == "hit_into_play", 1, 0),
-      isHit = ifelse(events %in% c("single", "double", "triple", "home_run"), 1, 0)
+      isBIP = ifelse(description == "hit_into_play", 1, 0),
+      isH = ifelse(events %in% hitEvents, 1, 0),
+      isXBH = ifelse(events %in% xbhEvents, 1, 0)
       ) %>%
     summarize(
       date = first(game_date),
@@ -80,141 +90,91 @@ for(i in seq_along(sDates)){
       misses = sum(isMiss, na.rm = T),
       fouls = sum(isFoul, na.rm = T),
       BIP = sum(isBIP, na.rm = T),
-      H = sum(isHit, na.rm = T)
-      
-      
-      )
+      H = sum(isH, na.rm = T),
+      XBH = sum(isXBH, na.rm = T))
   
-  #avg launch speed and angle of BIP
-  d3 <- d1 %>% filter(type == "X") %>%
-    summarize(
-      date = first(game_date),
-      total = n(),
-      avgLaunchSpeed = mean(launch_speed, na.rm = T),
-      avgLaunchAngle = mean(launch_angle, na.rm = T),
-      )
-  
-  #avg launch speed and angle of hits
-  d4 <- d1 %>% filter(events %in% c("single","double","triple","home_run")) %>%
-    summarize(
-      date = first(game_date),
-      total = n(),
-      avgLaunchSpeed = mean(launch_speed, na.rm = T),
-      avgLaunchAngle = mean(launch_angle, na.rm = T),
-    )
-  
-  #avg launch speed and angle of singles
-  d5 <- d1 %>% filter(events == "single") %>%
-    summarize(date = first(game_date),
-              total = n(),
-              avgLaunchSpeed = mean(launch_speed, na.rm = T),
-              avgLaunchAngle = mean(launch_angle, na.rm = T),
-    )
-  
-  #avg launch speed and angle of doubles
-  d6 <- d1 %>% filter(events == "double") %>%
-    summarize(date = first(game_date),
-              total = n(),
-              avgLaunchSpeed = mean(launch_speed, na.rm = T),
-              avgLaunchAngle = mean(launch_angle, na.rm = T),
-    )
-  
-  #avg launch speed and angle of triples
-  d7 <- d1 %>% filter(events == "triple") %>%
-    summarize(date = first(game_date),
-              total = n(),
-              avgLaunchSpeed = mean(launch_speed, na.rm = T),
-              avgLaunchAngle = mean(launch_angle, na.rm = T),
-    )
-  
-  #avg launch speed and angle of HR
-  d8 <- d1 %>% filter(events == "home_run") %>%
-    summarize(date = first(game_date),
-              total = n(),
-              avgLaunchSpeed = mean(launch_speed, na.rm = T),
-              avgLaunchAngle = mean(launch_angle, na.rm = T),
-    )
   
   #append new stats to dataframes
   freqDF <- freqDF %>% union(d2)
-  bipDF <- bipDF %>% union(d3)
-  hitDF <- hitDF %>% union(d4)
-  singDF <- singDF %>% union(d5)
-  doubDF <- doubDF %>% union(d6)
-  tripDF <- tripDF %>% union(d7)
-  hrDF <- hrDF %>% union(d8)
+  
   
 }
 
 #remove dummy row
 freqDF <- freqDF[-1,]
-bipDF <- bipDF[-1,]
-hitDF <- hitDF[-1,]
-singDF <- singDF[-1,]
-doubDF <- doubDF[-1,]
-tripDF <- tripDF[-1,]
-hrDF <- hrDF[-1,]
 
+#remove row with 0 pitches
+freqDF <- freqDF[-which(freqDF$pitches == 0),]
 
-#summaries
-freqDF %>% summarize(total = sum(total),
-            totalBIP = sum(totalBIP),
-            totalOut = sum(totalOut),
-            totalHit = sum(totalHit)) %>%
-  mutate(propBIP = totalBIP/total,
-         propOut = totalOut/total,
-         propHit = totalHit/total)
+summary(freqDF)
 
-#   total totalBIP totalOut totalHit propBIP propOut propHit
-#   <dbl>    <dbl>    <dbl>    <dbl>   <dbl>   <dbl>   <dbl>
-#1 277444    48527    31270    15797   0.175   0.113  0.0569
+#summarizing the results overall
+res1 <- freqDF %>% 
+  #variables calculated for each date
+  mutate(season = as.numeric(str_sub(date, start = 1, end = 4)),
+         swingRate = swings/pitches,
+         missRate = misses/pitches,
+         foulRate = fouls/pitches,
+         bipRate = BIP/pitches,
+         hitRate = H/pitches,
+         xbhRate = XBH/pitches) %>%
+  #averaging together stats from each game in sample
+  summarize(pitches = sum(pitches, na.rm = T),
+            swingRate = mean(swingRate, na.rm = T),
+            missRate = mean(missRate, na.rm = T),
+            foulRate = mean(foulRate, na.rm = T),
+            bipRate = mean(bipRate, na.rm = T),
+            hitRate = mean(hitRate, na.rm = T),
+            xbhRate = mean(xbhRate, na.rm = T))
 
-doSummary <- function(thisDF){
-  thisDF %>% summarize(
-    total = sum(total, na.rm = T),
-    avgLaunchSpeed = mean(avgLaunchSpeed, na.rm = T),
-    avgLaunchAngle = mean(avgLaunchAngle, na.rm = T)
-    )
-  }
+#pitches swingRate missRate foulRate bipRate hitRate xbhRate
+# 275249     0.468    0.109    0.180   0.178  0.0586  0.0211 
+# 273489     0.467    0.109    0.180   0.178  0.0583  0.0209
 
-w1 <- doSummary(bipDF)
-w1 <- w1 %>% mutate(type = "BIP")
-#  total avgLaunchSpeed avgLaunchAngle
-#  <dbl>          <dbl>          <dbl>
-#1 48527           87.9           11.8
+#summarizing the results by season
+res2 <- freqDF %>% 
+  #variables calculated for each game
+  mutate(season = as.numeric(str_sub(date, start = 1, end = 4)),
+         swingRate = swings/pitches,
+         missRate = misses/pitches,
+         foulRate = fouls/pitches,
+         bipRate = BIP/pitches,
+         hitRate = H/pitches,
+         xbhRate = XBH/pitches) %>%
+  group_by(season) %>%
+  #averaging together stats from each game in sample
+  summarize(pitches = sum(pitches, na.rm = T),
+            swingRate = mean(swingRate, na.rm = T),
+            missRate = mean(missRate, na.rm = T),
+            foulRate = mean(foulRate, na.rm = T),
+            bipRate = mean(bipRate, na.rm = T),
+            hitRate = mean(hitRate, na.rm = T),
+            xbhRate = mean(xbhRate, na.rm = T)) %>%
+  arrange(desc(season))
 
-w2 <- doSummary(hitDF)
-w2 <- w2 %>% mutate(type = "hit")
-#  total avgLaunchSpeed avgLaunchAngle
-#  <dbl>          <dbl>          <dbl>
-#1 15797           93.5           11.6
+#  season pitches swingRate missRate foulRate bipRate hitRate
+#1   2021   37998     0.468    0.109    0.186   0.173  0.0545
+#1   2021   39153     0.471    0.112    0.188   0.171  0.0559
 
-w3 <- doSummary(singDF)
-w3 <- w3 %>% mutate(type = "single")
-#  total avgLaunchSpeed avgLaunchAngle
-#  <dbl>          <dbl>          <dbl>
-#1 10136           89.9           6.13
+#2   2020   43673     0.461    0.113    0.180   0.167  0.0560
+#2   2020   39573     0.460    0.117    0.175   0.167  0.0550
 
-w4 <- doSummary(doubDF)
-w4 <- w4 %>% mutate(type = "double")
-#  total avgLaunchSpeed avgLaunchAngle
-#  <dbl>          <dbl>          <dbl>
-#1  3177           97.4           16.6
+#3   2019   34252     0.488    0.125    0.171   0.191  0.0650
+#3   2019   37068     0.487    0.122    0.174   0.192  0.0656
 
-w5 <- doSummary(tripDF)
-w5 <- w5 %>% mutate(type = "triple")
-#  total avgLaunchSpeed avgLaunchAngle
-#  <dbl>          <dbl>          <dbl>
-#1   298           96.9           19.4
+#4   2018   37615     0.462    0.111    0.177   0.173  0.0574
+#4   2018   42401     0.464    0.106    0.184   0.174  0.0561
 
-w6 <- doSummary(hrDF)
-w6 <- w6 %>% mutate(type = "HR")
-#  total avgLaunchSpeed avgLaunchAngle
-#  <dbl>          <dbl>          <dbl>
-#1  2186           104.           28.4
+#5   2017   42768     0.465    0.103    0.183   0.179  0.0590
+#5   2017   35971     0.465    0.105    0.182   0.178  0.0585
 
-w <- w1 %>% union(w2) %>% union(w3) %>% union(w4) %>% union(w5) %>% union(w6)
+#6   2016   40830     0.462    0.101    0.181   0.180  0.0596
+#6   2016   39601     0.463    0.103    0.179   0.180  0.0601
 
-w
+#7   2015   38113     0.469    0.102    0.182   0.185  0.0584
+#7   2015   39722     0.462    0.0985   0.179   0.185  0.0579
 
+res <- res1 %>% mutate(season = NA) %>%
+  union(res2)
 
+#write.csv(res, "data/sampleSwingRates.csv")
