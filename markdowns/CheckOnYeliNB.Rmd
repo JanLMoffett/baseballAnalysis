@@ -35,7 +35,7 @@ cyID <- 592885
 #the 2022 regular season started on Apr 7
 opening_day2022 <- "2022-04-07"
 cy <- statcast_search(start_date = opening_day2022, 
-                end_date = today(),
+                end_date = "2022-05-16",
                 player_type = "batter",
                 playerid = cyID)
 
@@ -122,10 +122,11 @@ cy <- cy %>%
     HR = ifelse(events == "home_run",1,0))
 ```
 
+Christian's numbers from his first 35 games of each season:
 
 ```{r bySeason, echo = F}
 #display stats by season
-cy %>% group_by(season) %>%
+res1 <- cy %>% group_by(season) %>%
   summarize(
     games = n_distinct(game_date),
     pitches = n(),
@@ -152,29 +153,27 @@ cy %>% group_by(season) %>%
     soRt = SO/PA
     
   ) %>% arrange(desc(season))
+
+res1
     
 ```
 
-If you follow recent Major League Baseball events, you'll be familiar with the period of time in which Yelich, nothing more than a skinny slap hitter to the unenlightened of the time, ascended to the heights of hitting god-dom, popping a squat aside Mike Trout at the top of the mountain, for a time.   
 
-Thirty-five games in to the 2018 season he was yet to enter this phase, thirty-five games into the 2019 season, which I will call "Beast Year," he was deep inside it.  You can see this in the significantly smaller number of pitches he had seen to that point in 2019, an indication he was putting balls in play early into plate appearances, when normally he's more reticent with his swings.  His confidence in his ability to swing at the right pitches was at its peak at this time, as was his physical condition.
-
-During the 2017-2018 offseason, Christian got bigger and stronger than he had ever been in his life, in anticipation of a new start in Milwaukee, or perhaps to make Derek Jeter jealous.  Early in 2018 he was still mortal, struggling some with the lower back pain that intermittently takes him out of the lineup, and is also purportedly responsible for his poor performance in 2021.  This point in time--35 games into 2018--is most interesting to me at the moment, because if I'm right, his career has a cycle and he is returning to a similar point in it now, in 2022, and heading towards another MVP-caliber year (or at the very least a drastic improvement from 2020 and 2021).
-
-**Side note:** My opinion is that Christian's recurring back injury is exacerbated by the head-first slides he does often as a frequent base-stealer.  Elite hitters who have big years of stolen bases rarely repeat them in subsequent years, I suspect because of the physical toll it takes.  Christian stole 22 bases in 2018, 30 in 2019 (becoming the 10th member of the 40-30 club, as my bobble-head will tell you), and single digits since.  It will be interesting to watch how many steals he attempts this year.  
 
 Launch characteristics of Christian's balls in play, after the first 35 games of each season:
 
 ```{r BIPstats, eval = T, echo = F, results = "show"}
 
 #BIP
-cy %>% filter(type == "X") %>%
+res2 <- cy %>% filter(type == "X") %>%
   group_by(season) %>%
   summarize(
     BIP = n(),
     avgLaunchAngle = mean(launch_angle, na.rm = T),
     avgLaunchSpeed = mean(launch_speed, na.rm = T)) %>% 
   arrange(desc(season))
+
+res2
 
 ```
 

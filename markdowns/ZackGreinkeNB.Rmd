@@ -29,7 +29,7 @@ Here are the plays that Zack was involved in during his April 7 start:
 
 ```{r, echo = F}
 zg %>% filter(type == "X" & str_detect(zg$des, "Greinke")) %>% 
-  select(pitch_number, pitch_name, release_speed, launch_speed, launch_angle, des)
+  select(inning, at_bat_number, pitch_number, pitch_name, release_speed, launch_speed, launch_angle, des)
 
 ```
 
