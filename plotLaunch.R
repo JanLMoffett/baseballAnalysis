@@ -1,4 +1,8 @@
 
+
+#assign whatever data you want to use to d
+d <- 
+
 #using ggplot2 to visualize launch angle and launch speed variables from Baseball Savant data
 
 

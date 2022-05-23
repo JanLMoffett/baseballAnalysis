@@ -52,27 +52,25 @@ d.s1 <- d.s1[-1,]
 summary(d.s1$launch_angle)
 summary(d.s1$launch_speed)
 
-subt1 <- "Stratified Cluster Sample of BIP\nfrom randomly selected game dates, 2015-2021"
+#saving the dataset
+#write.csv(d.s1, "data/BIP_35dates_2015_21.csv")
+
+subt1 <- "All BIP from a stratified random sample\nof game dates, 2015-2021"
+#the sample of game date is stratified by year
 cap1 <- "Data Source: Baseball Savant"
 
+#histogram of launch speed
 ggplot(d.s1) + napkin + 
   geom_histogram(aes(launch_speed), fill = oj["blue3"]) + 
   geom_vline(xintercept = mean(d.s1$launch_speed, na.rm = T), color = oj["orangeK"]) + 
-  geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) +
   geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
   labs(title = "Sample Distribution of Launch Speed",
        subtitle = subt1,
-       caption = cap1)
+       caption = cap1) + 
+  annotate("text", x = mean(d.s1$launch_speed, na.rm = T), y = 0, label = round(mean(d.s1$launch_speed, na.rm = T), digits=2)) +
+  annotate("text", x = quantile(d.s1$launch_speed, probs = c(0.05, 0.95), na.rm = T), y = 0, label = round(quantile(d.s1$launch_speed, probs = c(0.05, 0.95), na.rm = T), digits=2))
 
-ggplot(d.s1) + napkin + 
-  geom_density(aes(launch_speed), fill = oj["blue3"]) + 
-  geom_vline(xintercept = mean(d.s1$launch_speed, na.rm = T), color = oj["orangeK"]) + 
-  geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) +
-  geom_vline(xintercept = quantile(d.s1$launch_speed, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
-  labs(title = "Sample Distribution of Launch Speed",
-       subtitle = subt1,
-       caption = cap1)
-
+#histogram of launch angle
 ggplot(d.s1) + napkin + 
   geom_histogram(aes(launch_angle), fill = oj["blue4"]) + 
   geom_vline(xintercept = mean(d.s1$launch_angle, na.rm = T), color = oj["orangeK"]) + 
@@ -80,16 +78,18 @@ ggplot(d.s1) + napkin +
   geom_vline(xintercept = quantile(d.s1$launch_angle, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
   labs(title = "Sample Distribution of Launch Angle",
        subtitle = subt1,
-       caption = cap1)
+       caption = cap1) + 
+  annotate("text", x = mean(d.s1$launch_angle, na.rm = T), y = 0, label = round(mean(d.s1$launch_angle, na.rm = T), digits=2)) +
+  annotate("text", x = quantile(d.s1$launch_angle, probs = c(0.05, 0.95), na.rm = T), y = 0, label = round(quantile(d.s1$launch_angle, probs = c(0.05, 0.95), na.rm = T), digits=2))
 
-ggplot(d.s1) + napkin + 
-  geom_density(aes(launch_angle), fill = oj["blue4"]) +
-  geom_vline(xintercept = mean(d.s1$launch_angle, na.rm = T), color = oj["orangeK"]) + 
-  geom_vline(xintercept = quantile(d.s1$launch_angle, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) +
-  geom_vline(xintercept = quantile(d.s1$launch_angle, probs = c(0.05,0.95), na.rm = T), color = oj["orange5"]) + 
-  labs(title = "Sample Distribution of Launch Angle",
-       subtitle = subt1,
-       caption = cap1)
+#ECDF for launch speed
+e <- ggplot(d.s1) + napkin + stat_ecdf(aes(launch_speed)) + 
+  labs(title = "ECDF of Launch Speed")
+
+#ECDF for launch angle
+ggplot(d.s1) + napkin + stat_ecdf(aes(launch_angle)) + 
+  labs(title = "ECDF of Launch Angle")
+
 
 #i'd like to bootstrap samples from the sample of BIP
 

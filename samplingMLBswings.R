@@ -1,10 +1,8 @@
 
 
 library(baseballr)
-library(dplyr)
+library(tidyverse)
 library(lubridate)
-library(stringr)
-library(ggplot2)
 library(devtools)
 
 source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/colorConstants.R")
@@ -12,14 +10,39 @@ source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/e
 source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/datavizExtras.R")
 source_url("https://raw.githubusercontent.com/JanLMoffett/baseballAnalysis/master/buildDatesMLB.R")
 
+#Opening Day of the 2022 season was April 7, 2022
+openDay <- "2022-04-07"
 
-#each call requires a start date and end date
-#now i have a big vector of dates from the buildDatesMLB file
-head(bigDates)
-tail(bigDates)
+#dates so far (as of May 22)
+days <- 7:31
+apr22 <- rep("2022", length(days))
+apr22 <- paste0(apr22, "-04-", str_pad(days, side = "left", width = 2, pad = "0"))
 
-#i can sample from these dates to avoid pulling giant amounts of data
-#want to sample from each year separately
+days <- 1:day(today())
+may22 <- rep("2022", length(days))
+may22 <- paste0(may22, "-05-", str_pad(days, side = "left", width = 2, pad = "0"))
+
+#here are ll the game dates so far for 2022 reg. season
+dates22 <- c(apr22, may22)
+
+#about how many MLB pitches are in a day?
+
+#pick 5 random days
+sampleDates <- sample(dates22, 5)
+
+rd <- statcast_search(start_date = sd,
+                      end_date = sd,
+                      player_type = "batter")
+
+for(sd in sampleDates){
+  #scrape baseball savant data for those days
+  rd <- statcast_search(start_date = sd,
+                        end_date = sd,
+                        player_type = "batter")
+}
+
+
+dim(rd)[1]
 
 #pick some random days
 #number of date to sample from each season

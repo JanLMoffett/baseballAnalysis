@@ -1,10 +1,13 @@
 
 library(baseballr)
-library(ggplot2)
-library(dplyr)
-library(stringr)
+library(tidyverse)
 library(lubridate)
 library(devtools)
+library(boot)
+
+#a randomly sampled set of BIP to derive "average" comparison
+av <- read.csv(url("https://raw.githubusercontent.com/JanLMoffett/baseballAnalysis/master/data/BIP_35dates_2015_21.csv"))
+#see samplingMLB.R for how sample was gathered
 
 #importing colors and themes for plots
 #github.com/JanLMoffett/datavizExtras
@@ -18,19 +21,25 @@ cyID <- 592885
 
 #getting the data from baseball savant data with baseballr
 #the 2022 regular season started on Apr 7
-cy <- statcast_search(start_date = "2022-04-07", 
+cy22 <- statcast_search(start_date = "2022-04-07", 
                 end_date = today(),
                 player_type = "batter",
                 playerid = cyID)
+
+
+#need a random sample of all 2022 pitches to get a 2022 MLB avg
+av22 <- statcast_search(start_date = "2022-04-07",
+                        end_date = today(),
+                        player_type = "batter")
 
 hitEvents <- c("single","double","triple","home_run")
 outEvents <- c("field_out", "fielders_choice_out", "force_out",
                "grounded_into_double_play", "double_play")
 
-unique(cy$events)
+unique(cy22$events)
 
 #making some variables for the summary
-cy <- cy %>% 
+cy22 <- cy22 %>% 
   mutate(
     paID = paste0(game_date,"_", at_bat_number),
     
@@ -42,7 +51,7 @@ cy <- cy %>%
     BB = ifelse(events == "walk", 1, 0),
     SO = ifelse(events == "strikeout", 1, 0),
     
-    BIP = ifelse(type == "X", 1, 0),
+    BIP = ifelse(description == "hit_into_play", 1, 0),
     hit = ifelse(events %in% hitEvents, 1, 0),
     single = ifelse(events == "single",1,0),
     double = ifelse(events == "double",1,0),
@@ -56,7 +65,7 @@ cy <- cy %>%
 
 #all pitches
 t(
-cy %>%
+cy22 %>%
   summarize(
     pitches = n(),
     PA = n_distinct(paID),
@@ -83,13 +92,40 @@ cy %>%
     
   ))
 
-#BIP
-cy %>% filter(type == "X") %>%
+#Analysis of Launch Characteristics
+
+#Launch characteristics of BIP
+#Christian
+cy1 <- cy22 %>% filter(description == "hit_into_play") %>%
   summarize(avgLaunchAngle = mean(launch_angle, na.rm = T),
-            avgLaunchSpeed = mean(launch_speed, na.rm = T))
+            avgLaunchSpeed = mean(launch_speed, na.rm = T)) %>%
+  mutate(across(1:2, ~round(.x, digits = 1)))
+#MLB average
+av1 <- av %>% filter(description == "hit_into_play") %>%
+  summarize(avgLaunchAngle = mean(launch_angle, na.rm = T),
+            avgLaunchSpeed = mean(launch_speed, na.rm = T)) %>%
+  mutate(across(1:2, ~round(.x, digits = 1)))
+
+#where Christian lands among the distribution of launch speeds
+ggplot(av) + napkin + 
+  geom_histogram(aes(launch_speed), fill = transpa(ibm["purple"], 50)) + 
+  geom_vline(xintercept = c(av1$avgLaunchSpeed, cy1$avgLaunchSpeed), color = c(ibm["purple"], ibm["pink"]))
+
+#boxplots
+tav <- av %>% select(launch_angle, launch_speed) %>%
+  mutate(player = "MLB Average")
+tcy <- cy22 %>% select(launch_angle, launch_speed) %>%
+  mutate(player = "Christian Yelich")
+
+mean(av$launch_speed, na.rm = T)
+
+
+
+ggplot(td) + napkin + 
+  geom_boxplot(aes(launch_speed, factor(player)), fill = transpa(ibm["purple"], 50))
 
 #hits
-cy %>% filter(events %in% hitEvents) %>%
+cy22 %>% filter(events %in% hitEvents) %>%
   group_by(events) %>%
   summarize(avgLaunchAngle = mean(launch_angle, na.rm = T),
             avgLaunchSpeed = mean(launch_speed, na.rm = T))
