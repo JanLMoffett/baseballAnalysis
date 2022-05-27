@@ -57,6 +57,7 @@ unique(worldMap$region)
 
 #names of countries in map data and player dfs need to match
 wm <- unique(worldMap$region)
+
 pd <- unique(byCountry$birth_country)
 
 #need df of countries with 0 players
@@ -69,26 +70,19 @@ bc <- union(byCountry, zc)
 bc$n[bc$birth_country == "USA"] <- NA
 bc$n[bc$n == 0] <- NA
 #changing all 0 to NA to make map look better
-
-ggplot(bc, aes(fill = n, map_id = birth_country)) + 
-  juiceGlass +
-  geom_map(map = worldMap, color = oj["blueK"]) + 
-  expand_limits(x = worldMap$long, y = worldMap$lat) + 
-  scale_fill_gradient(low = oj["orange0"], high = oj["orange5"], na.value = oj["blue0"])
-
-#how do I zoom in on certain parts?
-#have to subset the map df and the value df with only the regions you want
-#we don't need antarctica
-
 bc <- bc %>% filter(birth_country != "Antarctica")
 wm <- worldMap %>% filter(region != "Antarctica")
 
+#how do I zoom in on certain parts?
+#have to subset the map df and the value df with only the regions you want
+
+#World Map
 ggplot(bc, aes(fill = n, map_id = birth_country)) + 
   napkin +
   geom_map(map = wm, color = oj["blueK"]) + 
   expand_limits(x = wm$long, y = wm$lat) + 
   scale_fill_gradient2(low = jmbn["periwinkle"], mid = jmbn["rose"], high = oj["orange5"], na.value = "grey99", midpoint = 425) +
-  labs(title = "Birth Countries of Baseball Players (Excluding US)",
+  labs(title = "Birth Countries of MLB Players from Outside US",
        subtitle = "Major and Minor Leagues (Affiliated), 2022",
        caption = "Data Source: MLB Stats API",
        x = "Longitude", y = "Latitude")
@@ -99,10 +93,9 @@ regs <- countryRegions
 #this var has some of the categories i want
 unique(regs$GEO3major)
 #let's try to isolate latin america and the caribbean
-regs[which(regs$GEO3major == "Latin America and the Caribbean"),]
 lacCountries <- regs$ADMIN[which(regs$GEO3major == "Latin America and the Caribbean")]
 lacCountries <- c(lacCountries, "USA")
-
+lacCountries[which(lacCountries == "The Bahamas")] <- "Bahamas"
 
 #filter map data rows for lac countries
 lac.mp <- worldMap %>% filter(region %in% lacCountries)
@@ -145,7 +138,7 @@ lac.labels["Nicaragua", 2:3] <- c( -84, 13)
 lac.labels["Panama", 2:3] <- c( -83, 7)
 lac.labels["Peru", 2:3] <- c(-77,-8)
 lac.labels["Puerto Rico", 2:3] <- c( -66, 17)
-lac.labels["The Bahamas", 2:3] <- c( -78, 25)             
+lac.labels["Bahamas", 2:3] <- c( -78, 25)             
 lac.labels["Venezuela", 2:3] <- c( -69, 8)
 
 ggplot(lac.bc, aes(fill = n, map_id = birth_country)) + 
@@ -153,7 +146,7 @@ ggplot(lac.bc, aes(fill = n, map_id = birth_country)) +
   geom_map(map = lac.mp, color = oj["blueK"]) + 
   expand_limits(x = lac.mp$long, y = lac.mp$lat) + 
   scale_fill_gradient2(low = jmbn["periwinkle"], mid = jmbn["rose"], high = oj["orange5"], na.value = "grey99", midpoint = 425) +
-  labs(title = "Birth Countries of Baseball Players (Excluding US)",
+  labs(title = "Birth Countries of MLB Players from Latin America\nand the Caribbean",
        subtitle = "Major and Minor Leagues (Affiliated), 2022",
        caption = "Data Source: MLB Stats API",
        x = "Longitude", y = "Latitude") + 
@@ -164,3 +157,114 @@ ggplot(lac.bc, aes(fill = n, map_id = birth_country)) +
            y = lac.labels$cy,
            adj = 0, 
            size = 3)
+
+#caribbean detail
+lac.labels["Aruba", 2:3] <- c( -71, 13)          
+lac.labels["Cuba", 2:3] <- c( -78, 21)
+lac.labels["Curacao", 2:3] <- c( -69.5, 12.5)
+lac.labels["Dominican Republic", 2:3] <- c( -71, 20.5)
+lac.labels["Honduras", 2:3] <- c( -87, 15)
+lac.labels["Jamaica", 2:3] <- c( -78, 17.5)
+lac.labels["Nicaragua", 2:3] <- c( -86, 13)
+lac.labels["Puerto Rico", 2:3] <- c( -67.5, 17.5)
+lac.labels["Bahamas", 2:3] <- c( -74, 23.5)             
+lac.labels["Venezuela", 2:3] <- c( -68, 10)
+
+ggplot(lac.bc, aes(fill = n, map_id = birth_country)) + 
+  napkin +
+  geom_map(map = lac.mp, color = oj["blueK"]) + 
+  expand_limits(x = lac.mp$long, y = lac.mp$lat) + 
+  scale_fill_gradient2(low = jmbn["periwinkle"], mid = jmbn["rose"], high = oj["orange5"], na.value = "grey99", midpoint = 425) +
+  labs(title = "Birth Countries of MLB Players from the Caribbean",
+       subtitle = "Major and Minor Leagues (Affiliated), 2022",
+       caption = "Data Source: MLB Stats API",
+       x = "Longitude", y = "Latitude") + 
+  coord_sf(xlim = c(-87,-62), ylim = c(10,25)) + 
+  annotate("text", 
+           label = row.names(lac.labels),
+           x = lac.labels$cx,
+           y = lac.labels$cy,
+           adj = 0, 
+           size = 3)
+
+#asia map
+unique(regs$GEO3)
+
+asia_regs <- c("NW Pacific and East Asia", 
+               "Southeast Asia", "South Asia",
+               "Central Asia")
+
+apacCountries <- regs$ADMIN[which(regs$GEO3 %in% asia_regs)]
+apacCountries <- c(apacCountries, "Hong Kong", "Russia")
+
+
+#filter map data rows for apac countries
+apac.mp <- worldMap %>% filter(region %in% apacCountries)
+#filter player data rows for apac countries
+apac.bc <- bc %>% filter(birth_country %in% apacCountries)
+
+
+
+ggplot(apac.bc, aes(fill = n, map_id = birth_country)) + 
+  napkin +
+  geom_map(map = apac.mp, color = oj["blueK"]) + 
+  expand_limits(x = apac.mp$long, y = apac.mp$lat) + 
+  scale_fill_gradient2(low = jmbn["periwinkle"], mid = jmbn["rose"], high = oj["orange5"], na.value = "grey99", midpoint = 8) +
+  labs(title = "Birth Countries of MLB Players from Asia",
+       subtitle = "Major and Minor Leagues (Affiliated), 2022",
+       caption = "Data Source: MLB Stats API",
+       x = "Longitude", y = "Latitude") + 
+  coord_sf(xlim = c(70,160), ylim = c(5,60))
+
+#-----
+
+#labels for map
+apac.labels <- data.frame(
+  row.names = c(
+    "China",
+    "South Korea",
+    "Japan",
+    "Taiwan",
+    "Hong Kong"
+  ),
+  cx = c(
+    102,
+    124,
+    137,
+    122,
+    113
+  ),
+  cy = c(
+    35,
+    37,
+    39,
+    23,
+    20
+  )
+  
+)
+
+
+ggplot(apac.bc, aes(fill = n, map_id = birth_country)) + 
+  napkin +
+  geom_map(map = apac.mp, color = oj["blueK"]) + 
+  expand_limits(x = apac.mp$long, y = apac.mp$lat) + 
+  scale_fill_gradient2(low = jmbn["periwinkle"], mid = jmbn["rose"], high = oj["orange5"], na.value = "grey99", midpoint = 8) +
+  labs(title = "Birth Countries of MLB Players from Asia",
+       subtitle = "Major and Minor Leagues (Affiliated), 2022",
+       caption = "Data Source: MLB Stats API",
+       x = "Longitude", y = "Latitude") + 
+  coord_sf(xlim = c(70,160), ylim = c(5,60)) +
+  annotate("text", 
+           label = row.names(apac.labels),
+           x = apac.labels$cx,
+           y = apac.labels$cy,
+           adj = 0, 
+           size = 3.5) + 
+  annotate("segment",
+           x = 115, xend = 114,
+           y = 20, yend = 22)
+
+
+
+
