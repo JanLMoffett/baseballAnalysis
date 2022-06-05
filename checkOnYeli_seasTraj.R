@@ -382,7 +382,7 @@ ratesPerGame <- totalsAndRates %>%
          SO_perGame = round(SO_perGame, digits = 2))
 
 #saving table to include in blog post
-write.csv(ratesPerGame, "data/yelichPerGameBySeason.csv")
+#write.csv(ratesPerGame, "data/yelichPerGameBySeason.csv")
 
 
 #going to zoom in on certain stats, and seasons, and fit some models to 
@@ -559,4 +559,42 @@ ggplot(g %>% filter(season > 2017)) + dustyBlk +
            color = ibm[5], size = 0.3) + 
   annotate("text", x = 145, y = pred.SO.2022[3] + 2, label = as.character(round(pred.SO.2022[1], digits = 1)),
            color = ibm[5])
-                
+
+#MLB averages for 2022, from samplingMLB2022.R
+avs1 <- read.csv("data/dayStats2022.csv")
+avs2 <- read.csv("data/dayStatsBatter2022.csv")
+
+avs1 <- avs1[-c(1,58),]
+avs2 <- avs2[-c(1,58),]
+
+avs1 <- avs1 %>% mutate(across(calledStrikes:badCalls, ~ .x / batters, .names = "perGame_{.col}"))
+avs1.sum <- avs1 %>% summarize(across(starts_with("perGame"), mean))
+
+t(avs1.sum)
+#perGame_calledStrikes 2.4809920
+#perGame_whiffs        1.6887410
+#perGame_swings        7.1691125
+#perGame_BIP           2.6453361
+#perGame_H             0.8309705
+#perGame_BIP_out       1.7699625
+#perGame_BB            0.3188302
+#perGame_SO            0.8636545
+#perGame_outsideZone   7.4796748
+#perGame_badCalls      0.2919266
+
+ggplot(avs1) + geom_histogram(aes(x = perGame_H))
+
+avs2.sum <- avs2 %>% summarize(across(calledStrikes:badCalls, mean))
+t(avs2.sum)
+#calledStrikes 2.7839297
+#whiffs        1.8728174
+#swings        8.0947732
+#BIP           3.0139187
+#H             0.9731480
+#BIPouts       1.9925522
+#BB            0.3741939
+#SO            0.9431741
+#outsideZone   8.4710530
+#badCalls      0.3299872
+
+ggplot(avs2) + geom_histogram(aes(H))

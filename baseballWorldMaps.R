@@ -11,7 +11,7 @@ source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/c
 source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/extraThemes.R")
 source_url("https://raw.githubusercontent.com/JanLMoffett/datavizExtras/master/datavizExtras.R")
 
-
+#see baseballWorldMapsData.R for how i got dataset
 d <- read.csv("data/affiliatedPlayers2022.csv")
 
 #let's see where everyone's from
