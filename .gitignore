@@ -1,3 +1,11 @@
+
+#anything but code
+*.csv
+*.xlsx
+data/
+
+
+
 # History files
 .Rhistory
 .Rapp.history
