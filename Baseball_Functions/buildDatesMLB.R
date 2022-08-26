@@ -52,6 +52,7 @@ make_monthDF <- function(startDate, endDate){
 }
 
 #https://www.baseball-reference.com/leagues/majors/2021-schedule.shtml
+#The 2022 season is taking place Apr 7 - Oct 5, ASB Jul 18-20
 #The 2021 season took place Apr 1 - Oct 3, ASB Jul 12-15
 #The 2020 regular season took place Jul 23 - Sep 27
 #The 2019 regular season took place Mar 20 - Sep 29, ASB Jul 8-10
@@ -62,11 +63,11 @@ make_monthDF <- function(startDate, endDate){
 
 #a data frame containing reg season start and end dates of statcast years (2015-now)
 SCseasons <- data.frame(
-  season = 2015:2021,
+  season = 2015:2022,
   start = c("2015-04-05", "2016-04-03", "2017-04-02", "2018-03-29", "2019-03-20", 
-            "2020-07-23", "2021-04-01"),
+            "2020-07-23", "2021-04-01", "2022-04-07"),
   end = c("2015-10-04", "2016-10-02", "2017-10-01", "2018-10-01", "2019-09-29",
-          "2020-09-27", "2021-10-03"))
+          "2020-09-27", "2021-10-03", "2022-10-05"))
 
 #a vector to hold all dates
 bigDates <- vector()
@@ -86,6 +87,7 @@ for(i in 1:dim(SCseasons)[1]){
 }
 
 #remove all star breaks from dates
+bigDates <- bigDates[-c(which(bigDates == "2022-07-18"):which(bigDates == "2022-07-20"))]
 bigDates <- bigDates[-c(which(bigDates == "2021-07-12"):which(bigDates == "2021-07-15"))]
 bigDates <- bigDates[-c(which(bigDates == "2019-07-08"):which(bigDates == "2019-07-10"))]
 bigDates <- bigDates[-c(which(bigDates == "2018-07-16"):which(bigDates == "2018-07-18"))]
@@ -93,3 +95,4 @@ bigDates <- bigDates[-c(which(bigDates == "2017-07-10"):which(bigDates == "2017-
 bigDates <- bigDates[-c(which(bigDates == "2016-07-11"):which(bigDates == "2016-07-14"))]
 bigDates <- bigDates[-c(which(bigDates == "2015-07-13"):which(bigDates == "2015-07-16"))]
 
+#write.csv(data.frame(dates = bigDates), "data/all_mlb_dates_2015_2022.csv")
